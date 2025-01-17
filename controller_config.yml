@@ -56,19 +56,43 @@ controller_inventory_sources:
     source_path: 'inventory'
 
 controller_credential_types:
-- name: OCP Pull Secret
-  description: OCP Pull Secret
+- name: OCP Install config
+  description: OCP Install config
   inputs:
     fields:
     - type: string
       id: pull_secret
       label: Pull secret
       secret: true
+    - type: string
+      id: username
+      label: The username that will be used in naming/labeling
+    - type: string
+      id: worker_instance_type
+      label: The instance that will be used for the ocp worker nodes
+    - type: string
+      id: control_plane_instance_type
+      label: The instance that will be used for the ocp control plane nodes
+    - type: string
+      id: ssh_pub_key
+      label: The ssh public key to use
+    - type: string
+      id: aws_region
+      label: The region to create the ocp cluster
     required:
     - pull_secret
+    - username
+    - ssh_pub_key
+    - control_plane_instance_type
+    - worker_instance_type
   injectors:
     extra_vars:
-      pull_secret: !unsafe "{{ pull_secret }}"
+      ocp_pull_secret: !unsafe "{{ pull_secret }}"
+      ocp_username: !unsafe "{{ username }}"
+      ocp_aws_region: !unsafe "{{ aws_region }}"
+      ocp_ssh_pub_key: !unsafe "{{ ssh_pub_key }}"
+      ocp_worker_instance_type: !unsafe "{{ worker_instance_type }}"
+      ocp_control_plane_instance_type: !unsafe "{{ control_plane_instance_type }}"
 
 controller_templates:
   - name: Demo Job Template
@@ -83,14 +107,15 @@ controller_templates:
     credentials:
       - ec2_ssh_credential
 
-  - name: Secret Playbook
+  - name: Create OCP Cluster
     organization: "{{ orgname_vault }}"
     project: '{{ agof_demo_project_name }}'
     job_type: run
-    playbook: 'ansible/playbooks/hello-world.yml'
+    playbook: 'ansible/playbooks/ocp-cluster.yml'
     inventory: "AGOF Demo Inventory"
     credentials:
-      - test_secret
+      - ec2_ssh_credential
+      - ocp_install_vars
 
 controller_schedules:
   - name: Ping Playbook
@@ -109,13 +134,19 @@ controller_credentials:
       username: 'ec2-user'
       ssh_key_data: "{{ lookup('file', demo_ssh_key_file) }}"
       become_method: sudo
-  - name: test_secret
-    description: "Test secret from agof"
+  - name: ocp_install_vars
+    description: "Openshift install variables"
     organization: '{{ orgname_vault }}'
-    credential_type: OCP Pull Secret
+    credential_type: OCP Install config
     inputs:
-      pull_secret: "{{ pull_secret }}"
+      pull_secret: !unsafe "{{ ocp_pull_secret }}"
+      username: "{{ ocp_username }}"
+      ssh_pub_key: "{{ ocp_ssh_pub_key }}"
+      control_plane_instance_type: "{{ ocp_control_plane_instance_type }}"
+      worker_instance_type: "{{ ocp_worker_instance_type }}"
 
 controller_launch_jobs:
   - name: Ping Playbook
+    organization: "{{ orgname_vault }}"
+  - name: Create OCP Cluster
     organization: "{{ orgname_vault }}"
