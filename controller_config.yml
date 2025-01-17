@@ -66,6 +66,9 @@ controller_credential_types:
       secret: true
     required:
     - pull_secret
+  injectors:
+    extra_vars:
+      pull_secret: !unsafe "{{ pull_secret }}"
 
 controller_templates:
   - name: Demo Job Template
@@ -79,6 +82,15 @@ controller_templates:
     inventory: "AGOF Demo Inventory"
     credentials:
       - ec2_ssh_credential
+
+  - name: Secret Playbook
+    organization: "{{ orgname_vault }}"
+    project: '{{ agof_demo_project_name }}'
+    job_type: run
+    playbook: 'ansible/playbooks/hello-world.yml'
+    inventory: "AGOF Demo Inventory"
+    credentials:
+      - test_secret
 
 controller_schedules:
   - name: Ping Playbook
