@@ -55,7 +55,17 @@ controller_inventory_sources:
     source_project: '{{ agof_demo_project_name }}'
     source_path: 'inventory'
 
-controller_credential_types: []
+controller_credential_types:
+- name: OCP Pull Secret
+  description: OCP Pull Secret
+  inputs:
+    fields:
+    - type: string
+      id: pull_secret
+      label: Pull secret
+      secret: true
+    required:
+    - pull_secret
 
 controller_templates:
   - name: Demo Job Template
@@ -87,6 +97,12 @@ controller_credentials:
       username: 'ec2-user'
       ssh_key_data: "{{ lookup('file', demo_ssh_key_file) }}"
       become_method: sudo
+  - name: test_secret
+    description: "Test secret from agof"
+    organization: '{{ orgname_vault }}'
+    credential_type: OCP Pull Secret
+    inputs:
+      pull_secret: "{{ pull_secret }}"
 
 controller_launch_jobs:
   - name: Ping Playbook
