@@ -22,8 +22,6 @@ agof_demo_project_name: 'Ansible GitOps Framework Minimal Demo'
 
 controller_validate_certs: false
 
-controller_settings: []
-
 controller_projects:
   - name: Demo Project
     state: absent
@@ -111,11 +109,22 @@ controller_templates:
     organization: "{{ orgname_vault }}"
     project: '{{ agof_demo_project_name }}'
     job_type: run
-    playbook: 'ansible/playbooks/ocp-cluster.yml'
+    playbook: 'ansible/playbooks/ocp-cluster-install.yml'
     inventory: "AGOF Demo Inventory"
     credentials:
       - ec2_ssh_credential
       - ocp_install_vars
+      - aws_credentials
+  - name: Delete OCP Cluster
+    organization: "{{ orgname_vault }}"
+    project: '{{ agof_demo_project_name }}'
+    job_type: run
+    playbook: 'ansible/playbooks/ocp-cluster-uninstall.yml'
+    inventory: "AGOF Demo Inventory"
+    credentials:
+      - ec2_ssh_credential
+      - ocp_install_vars
+      - aws_credentials
 
 controller_schedules:
   - name: Ping Playbook
@@ -139,14 +148,22 @@ controller_credentials:
     organization: '{{ orgname_vault }}'
     credential_type: OCP Install config
     inputs:
-      pull_secret: !unsafe "{{ ocp_pull_secret }}"
+      pull_secret: "{{ ocp_pull_secret }}"
       username: "{{ ocp_username }}"
       ssh_pub_key: "{{ ocp_ssh_pub_key }}"
       control_plane_instance_type: "{{ ocp_control_plane_instance_type }}"
       worker_instance_type: "{{ ocp_worker_instance_type }}"
+  - name: aws_credentials
+    description: "AWS credentials"
+    organization: '{{ orgname_vault }}'
+    credential_type: Amazon Web Services
+    inputs:
+      username: '{{ aws_access_key_vault }}'
+      password: '{{ aws_secret_key_vault }}'
 
 controller_launch_jobs:
   - name: Ping Playbook
     organization: "{{ orgname_vault }}"
-  - name: Create OCP Cluster
-    organization: "{{ orgname_vault }}"
+#  - name: Create OCP Cluster
+#    organization: "{{ orgname_vault }}"
+#    wait: true
